@@ -1,48 +1,30 @@
-# Hydraulic Piping Designer
+# CLAUDE.md
 
-A React/Vite web app for modeling pump piping networks (P&ID-style) and
-solving them in **Required Duty** mode: you specify what each outlet
-needs (flow + residual pressure), and the app solves *backwards* through
-the network for the pressure the pump must produce, then checks that
-against the pump curve.
+Guidance for Claude Code when working in this repository.
 
-Flow is always a design input, never an output invented from spare pump
-pressure - see "Non-negotiable invariants" below.
+## What this is
 
-## Getting started
+Hydraulic Piping Designer - a React/Vite web app that models pump piping
+networks (P&ID-style) and solves them in **Required Duty** mode: the user
+specifies what each outlet needs (flow + residual pressure), and the app
+solves *backwards* through the network for the pressure the pump must
+produce, then checks that against the pump curve. Flow is always a design
+input, never an output invented from spare pump pressure.
+
+## Commands
 
 ```bash
-npm install
-npm run dev       # start the dev server
-npm run build      # production build to dist/
+npm install       # install deps (react, jspdf, xlsx, vite)
+npm run dev        # start dev server
+npm run build       # production build to dist/
 npm run preview     # preview the production build
-npm test          # solver test suite (no browser needed)
+npm test          # node src/solver/tests.js - solver test suite, no browser needed
 ```
 
-Run `npm test` after touching anything under `src/solver/` - it encodes
-worked examples (single-outlet required duty, branch flow conservation,
-pressure margin PASS/FAIL, loop detection) and is the fastest way to catch
-a regression in the hydraulics.
-
-## How to use it
-
-1. **Add components** from the toolbar: a pump, one or more outlets,
-   junctions to branch the network, valves, and tanks.
-2. **Connect them** with the Connect tool - click a source component, then
-   a target component, to draw a pipe between them.
-3. **Select a pipe** to set its diameter (pick a nominal size or type a
-   custom internal diameter), length, material/roughness, elevation
-   change, and fittings (K-values).
-4. **Select each outlet** and enter the flow it needs and the residual
-   pressure it must retain at that duty.
-5. **Select the pump** to enter its curve (type points directly, paste a
-   CSV, or generate a simplified curve from shutoff/duty/max-flow points)
-   and its suction-side inputs (static head, suction line loss, NPSH
-   required).
-6. Watch the **Warnings panel** and the pump's **RESULTS (CALCULATED)**
-   section: total demanded flow, required vs. available discharge
-   pressure, PASS/FAIL, and (on FAIL) an estimated achievable duty.
-7. **Export** a PDF or Excel report, or save/load the network as JSON.
+Run `npm test` after touching anything under `src/solver/` - it encodes the
+spec's worked examples (single-outlet required duty, branch flow
+conservation, pressure margin PASS/FAIL, loop detection) and is the fastest
+way to catch a regression in the hydraulics.
 
 ## Architecture
 
@@ -61,7 +43,7 @@ src/
                                      backward required-pressure pass -> pump duty
                                      check -> bisection for "estimated achievable
                                      duty" when duty fails -> NPSH estimate
-                   tests.js           plain-Node assertions against the worked examples
+                   tests.js           plain-Node assertions against the spec examples
   model/          Node/edge factories (createComponent.js), undo/redo history stack
   constants/      Toolbar palette, default K-values, nominal pipe size table
   components/     React UI only - Toolbar, Canvas (SVG P&ID + drag/pan/zoom/connect),
@@ -103,7 +85,7 @@ features or refactoring:
    `solveResult.ok` is false, the reports say so explicitly rather than
    emitting blank/placeholder numbers.
 
-## Known simplifications (intentional)
+## Known simplifications (intentional, documented in README.md)
 
 - Solver supports branching **tree** networks only; loops are detected and
   warned about, not solved.
@@ -117,4 +99,15 @@ features or refactoring:
 - Node-to-node connections are centre-to-centre with simple L-shaped
   orthogonal routing rather than discrete multi-port connection points.
 
-If you fix or remove one of these, update this section in the same change.
+If you fix or remove one of these, update README.md's "Known
+simplifications" section in the same change.
+
+## Environment note
+
+This project was originally authored in a sandbox with no network access,
+so `npm install` was never run there. Correctness was instead verified via
+`node src/solver/tests.js` (solver logic, no deps needed) and an esbuild
+bundle pass over the whole app with `react`/`react-dom`/`xlsx`/`jspdf`
+marked external (catches syntax errors and broken imports without needing
+the deps installed). Do a normal `npm install && npm run dev` check after
+any structural change, especially to `App.jsx` or `Canvas.jsx`.
